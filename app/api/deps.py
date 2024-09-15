@@ -1,20 +1,17 @@
-from typing import Generator, Optional
+# from typing import Generator, Optional
+from typing import Optional
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+# from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
 from app.core.config import settings
-from app.core.security import verify_password, get_password_hash
+# from app.core.security import verify_password, get_password_hash
 from app.db.base import get_db
 from app.models.user import User
 from app.crud.user import get_user_by_email
 from pydantic import BaseModel
-
-
-# Используем OAuth2 для работы с JWT
-# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 # Модель для токена

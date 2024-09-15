@@ -1,9 +1,22 @@
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.note import Note, Tag
 from app.schemas.note import NoteCreate
+from app.models.note import note_tags  # Импорт ассоциационной таблицы
+
+
+
+# Асинхронная функция для получения заметок пользователя
+async def get_notes(db: AsyncSession, user_id: int):
+    # result = await db.execute(select(Note).where(Note.user_id == user_id))
+    # return result.scalars().all()  # Возвращаем все найденные заметки
+
+    result = await db.execute(
+        select(Note).where(Note.user_id == user_id).options(selectinload(Note.tags))
+    )
+    return result.scalars().all()  # Возвращаем все найденные заметки
 
 
 # Асинхронная функция для создания новой заметки
@@ -29,12 +42,72 @@ async def create_note(db: AsyncSession, note_in: NoteCreate, user_id: int):
     return note
 
 
-# Асинхронная функция для получения заметок пользователя
-async def get_notes(db: AsyncSession, user_id: int):
-    # result = await db.execute(select(Note).where(Note.user_id == user_id))
-    # return result.scalars().all()  # Возвращаем все найденные заметки
-
+# Асинхронная функция для обновления заметки
+async def update_note(db: AsyncSession, note_id: int, note_in: NoteCreate, user_id: int):
     result = await db.execute(
-        select(Note).where(Note.user_id == user_id).options(selectinload(Note.tags))
+        select(Note).where(Note.id == note_id, Note.user_id == user_id).options(selectinload(Note.tags))
     )
-    return result.scalars().all()  # Возвращаем все найденные заметки
+    note = result.scalars().first()
+
+    if not note:
+        return None  # Если заметка не найдена или принадлежит другому пользователю
+
+    # Обновляем поля заметки
+    note.title = note_in.title
+    note.content = note_in.content
+
+    # Обрабатываем теги
+    tags = []
+    for tag_name in note_in.tags:
+        tag = await db.execute(select(Tag).where(Tag.name == tag_name))
+        tag = tag.scalars().first()
+        if not tag:
+            tag = Tag(name=tag_name)
+            db.add(tag)
+        tags.append(tag)
+
+    note.tags = tags  # Обновляем теги
+
+    await db.commit()  # Асинхронный коммит
+    await db.refresh(note)  # Обновляем объект заметки
+    return note
+
+
+# # Асинхронная функция для удаления заметки
+# async def delete_note(db: AsyncSession, note_id: int, user_id: int):
+#     result = await db.execute(
+#         select(Note).where(Note.id == note_id, Note.user_id == user_id)
+#     )
+#     note = result.scalars().first()
+#
+#     if not note:
+#         return None  # Если заметка не найдена или принадлежит другому пользователю
+#
+#     await db.execute(delete(Note).where(Note.id == note_id))
+#     await db.commit()  # Асинхронный коммит
+#     return note
+
+
+# Асинхронная функция для удаления заметки
+async def delete_note(db: AsyncSession, note_id: int, user_id: int):
+    # Проверяем, существует ли заметка и принадлежит ли она текущему пользователю
+    result = await db.execute(
+        select(Note).where(Note.id == note_id, Note.user_id == user_id)
+    )
+    note = result.scalars().first()
+
+    if not note:
+        return None  # Заметка не найдена или принадлежит другому пользователю
+
+    # Удаляем связанные записи из таблицы note_tags
+    await db.execute(
+        delete(note_tags).where(note_tags.c.note_id == note_id)
+    )
+
+    # Удаляем саму заметку
+    await db.execute(delete(Note).where(Note.id == note_id))
+
+    # Фиксируем изменения в базе данных
+    await db.commit()
+
+    return note
