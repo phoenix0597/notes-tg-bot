@@ -3,6 +3,8 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.requests import Request
+
 from app.core.config import settings
 from app.core.security import verify_password, get_password_hash
 from app.db.base import get_db
@@ -10,8 +12,9 @@ from app.models.user import User
 from app.crud.user import get_user_by_email
 from pydantic import BaseModel
 
+
 # Используем OAuth2 для работы с JWT
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 # Модель для токена
@@ -19,11 +22,19 @@ class TokenData(BaseModel):
     email: Optional[str] = None
 
 
+async def get_token(request: Request) -> str:
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return token
+
+
 # Зависимость для получения текущего пользователя по токену
-async def get_current_user(
-        db: AsyncSession = Depends(get_db),
-        token: str = Depends(oauth2_scheme)
+async def get_current_user(db: AsyncSession = Depends(get_db), token: str = Depends(get_token)
 ) -> User:
+
+    print(f"Received token: {token}")  # Добавляем отладочное сообщение
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -41,7 +52,7 @@ async def get_current_user(
         raise credentials_exception
 
     # Получаем пользователя по email
-    user = await get_user_by_email(db, email=token_data.email)
+    user = await get_user_by_email(db=db, email=token_data.email)
     if user is None:
         raise credentials_exception
 

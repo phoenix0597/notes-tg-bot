@@ -15,7 +15,7 @@ app.include_router(auth.router)
 app.include_router(note.router)
 
 
-@app.get("/", tags=["Welcome API endpoint"])
+@app.get("/", tags=["Welcome endpoint"])
 async def root():
     return {"message": "Welcome to Notes API"}
 

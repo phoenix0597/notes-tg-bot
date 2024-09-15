@@ -21,12 +21,3 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, key=settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
-
-
-async def authenticate_user(email: str, password: str):
-    user = await settings.get_user(email)
-    if not user:
-        return False
-    if not verify_password(password, user.hashed_password):
-        raise HTTPException(status_code=400, detail="Incorrect email or password")
-    return user
