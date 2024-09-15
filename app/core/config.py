@@ -31,5 +31,6 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-print(BASE_DIR)
-print(ENV_FILE)
+# print(BASE_DIR)
+# print(ENV_FILE)
+# print(settings.DATABASE_URL)

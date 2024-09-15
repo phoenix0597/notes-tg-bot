@@ -15,3 +15,9 @@ AsyncSessionLocal = sessionmaker(
 
 class Base(DeclarativeBase):
     pass
+
+
+# Функция для получения асинхронной сессии
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        yield session
