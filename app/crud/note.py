@@ -7,21 +7,16 @@ from app.schemas.note import NoteCreate
 from app.models.note import note_tags  # Импорт ассоциационной таблицы
 
 
-
 # Асинхронная функция для получения заметок пользователя
 async def get_notes(db: AsyncSession, user_id: int):
-    # result = await db.execute(select(Note).where(Note.user_id == user_id))
-    # return result.scalars().all()  # Возвращаем все найденные заметки
-
-    result = await db.execute(
-        select(Note).where(Note.user_id == user_id).options(selectinload(Note.tags))
-    )
+    query = select(Note).where(Note.user_id == user_id).options(selectinload(Note.tags))
+    # print(query.compile(compile_kwargs={"literal_binds": True}))
+    result = await db.execute(query)
     return result.scalars().all()  # Возвращаем все найденные заметки
 
 
 # Асинхронная функция для создания новой заметки
 async def create_note(db: AsyncSession, note_in: NoteCreate, user_id: int):
-
     # Получаем или создаем теги
     tags = []
     for tag_name in note_in.tags:
@@ -34,7 +29,6 @@ async def create_note(db: AsyncSession, note_in: NoteCreate, user_id: int):
 
     # note = Note(**note_in.model_dump(), user_id=user_id)
     note = Note(title=note_in.title, content=note_in.content, user_id=user_id, tags=tags)
-
 
     db.add(note)
     await db.commit()  # Асинхронный коммит
