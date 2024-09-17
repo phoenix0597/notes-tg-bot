@@ -57,11 +57,16 @@ async def get_notes(message: types.Message):
     async with aiohttp.ClientSession() as session:
         async with session.get(f"http://{s.BACKEND_HOST}:{s.BACKEND_PORT}/notes",
             headers={"Telegram-ID": str(message.from_user.id)}) as response:
+
             if response.status == 200:
                 notes = await response.json()
                 for note in notes:
                     print(f"\n{note=}\n")
-                    await message.answer(f"Заметка: {note['title']}\n{note['content']}")
+                    tags_list = list([tag['name'] for tag in note['tags']])
+                    tags_str = ', '.join(tags_list) if tags_list else 'нет'
+                    await message.answer(f"Заметка: {note['title']}\n"
+                                         f"{note['content']}\n"
+                                         f"Теги: {tags_str}")
             else:
                 await message.answer("Ошибка при получении заметок.")
 
