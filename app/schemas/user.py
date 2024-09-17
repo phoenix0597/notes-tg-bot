@@ -1,11 +1,14 @@
+# app/schemas/user.py
 from pydantic import BaseModel, ConfigDict, EmailStr
+from typing import Optional
 
 
 class UserBase(BaseModel):
-    email: EmailStr
+    email: Optional[EmailStr]
 
 class UserCreate(UserBase):
-    password: str
+    password: Optional[str]
+    telegram_id: Optional[int]
 
 class UserInDB(UserBase):
     id: int

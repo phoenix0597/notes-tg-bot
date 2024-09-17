@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     DATABASE_URL: str = ""
+    TG_API_TOKEN: str
+    BACKEND_HOST: str
+    BACKEND_PORT: int
+
 
     @model_validator(mode="after")
     def get_database_url(self):
