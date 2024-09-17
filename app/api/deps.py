@@ -26,16 +26,21 @@ async def get_token(request: Request) -> str:
 # Зависимость для получения текущего пользователя по токену или Telegram ID
 async def get_current_user(
         db: AsyncSession = Depends(get_db),
-        telegram_id: int = None,
+        telegram_id: int = Header(None),
         access_token: str = Cookie(None),  # Извлечение токена из куки
         authorization: str = Header(None)  # Извлечение токена из заголовка Authorization
 ) -> User:
     token = None
+
+    print(f"Received Telegram ID: {telegram_id=}")  # Отладочное сообщение
+
+    # Если есть Telegram-ID в заголовке, ищем пользователя по нему
     if telegram_id:
-        # Поиск пользователя по Telegram ID
-        user = await get_user_by_telegram_id(db=db, telegram_id=telegram_id)
-        if not user:
-            raise HTTPException(status_code=401, detail="User not found")
+        user = await get_user_by_telegram_id(db, telegram_id)
+        if user:
+            return user
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Invalid Telegram ID")
 
     # На случай добавления клиентов (мобильных приложений или фронтенд-фреймворков
     # вроде React) оставим возможность передачи токена в заголовке
@@ -44,7 +49,8 @@ async def get_current_user(
         # Если токен передан в заголовке Authorization
         scheme, _, param = authorization.partition(" ")
         if scheme.lower() != "bearer":
-            raise HTTPException(status_code=401, detail="Invalid authentication scheme")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="Invalid authentication scheme")
         token = param
 
     elif access_token:
@@ -56,17 +62,22 @@ async def get_current_user(
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
             email = payload.get("sub")
             if email is None:
-                raise HTTPException(status_code=401, detail="Invalid token payload")
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                    detail="Invalid token payload")
             user = await get_user_by_email(db=db, email=email)
             if not user:
-                raise HTTPException(status_code=401, detail="Invalid credentials")
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                    detail="Invalid credentials")
         except ExpiredSignatureError:
-            raise HTTPException(status_code=401, detail="Token has expired")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="Token has expired")
         except JWTError:
-            raise HTTPException(status_code=401, detail="Could not validate credentials")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="Could not validate credentials")
 
     else:
-        raise HTTPException(status_code=401, detail="Authorization credentials not provided")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Authorization credentials not provided")
 
     return user
 
@@ -74,5 +85,5 @@ async def get_current_user(
 # Зависимость для получения текущего активного пользователя (например, проверка блокировки аккаунта)
 async def get_current_active_user(current_user: User = Depends(get_current_user)):
     if not current_user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
     return current_user

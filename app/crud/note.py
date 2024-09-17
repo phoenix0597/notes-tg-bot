@@ -67,21 +67,6 @@ async def update_note(db: AsyncSession, note_id: int, note_in: NoteCreate, user_
     return note
 
 
-# # Асинхронная функция для удаления заметки
-# async def delete_note(db: AsyncSession, note_id: int, user_id: int):
-#     result = await db.execute(
-#         select(Note).where(Note.id == note_id, Note.user_id == user_id)
-#     )
-#     note = result.scalars().first()
-#
-#     if not note:
-#         return None  # Если заметка не найдена или принадлежит другому пользователю
-#
-#     await db.execute(delete(Note).where(Note.id == note_id))
-#     await db.commit()  # Асинхронный коммит
-#     return note
-
-
 # Асинхронная функция для удаления заметки
 async def delete_note(db: AsyncSession, note_id: int, user_id: int):
     # Проверяем, существует ли заметка и принадлежит ли она текущему пользователю

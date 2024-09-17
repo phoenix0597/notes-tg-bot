@@ -19,7 +19,6 @@ async def register_new_user(
         user_in: UserCreate = None,
         db: AsyncSession = Depends(get_db)
 ):
-
     # Стандартная регистрация по email и паролю
     if user_in:
         existing_user = await get_user_by_email(db, user_in.email)
@@ -28,6 +27,7 @@ async def register_new_user(
 
     user = await create_user(db=db, user_in=user_in)
     return user
+
 
 @router.post("/register/telegram", response_model=UserInDB)
 async def register_new_user_by_telegram(
@@ -44,7 +44,6 @@ async def register_new_user_by_telegram(
     return new_user
 
 
-
 @router.post("/login")
 async def login_for_access_token(
         response: Response,
@@ -52,7 +51,7 @@ async def login_for_access_token(
         telegram_id: int = None,  # Для логина по Telegram ID
 
         db: AsyncSession = Depends(get_db)
-):
+) -> object:
     user = None
 
     # Логин по Telegram ID
@@ -78,9 +77,13 @@ async def login_for_access_token(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-# @router.get("/telegram/{telegram_id}")
-# async def get_user_by_telegram_id_route(telegram_id: int, db: AsyncSession = Depends(get_db)):
-#     user = await get_user_by_telegram_id(db=db, telegram_id=telegram_id)
-#     if not user:
-#         raise HTTPException(status_code=404, detail="User not found")
-#     return {"id": user.id, "email": user.email}
+@router.post("/login/telegram", response_model=UserInDB)
+async def login_by_telegram_id(
+        telegram_id: int = Header(...),  # Получаем telegram_id из заголовка
+        db: AsyncSession = Depends(get_db)
+):
+    user = await get_user_by_telegram_id(db, telegram_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return user

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
@@ -23,10 +23,13 @@ async def read_notes(
 
 @router.post("/", response_model=NoteInDB, status_code=status.HTTP_201_CREATED)
 async def create_new_note(
+        request: Request,  # Добавляем объект Request для отладки
         note_in: NoteCreate,
         db: AsyncSession = Depends(get_db),
         current_user: int = Depends(get_current_user)
 ):
+    print(f"Request headers: {request.headers}")  # Выводим заголовки запроса
+
     return await create_note(db=db, note_in=note_in, user_id=current_user.id)
 
 

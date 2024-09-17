@@ -5,6 +5,7 @@ from typing import Optional
 
 class UserBase(BaseModel):
     email: Optional[EmailStr]
+    telegram_id: Optional[int]
 
 class UserCreate(UserBase):
     password: Optional[str]
@@ -13,5 +14,6 @@ class UserCreate(UserBase):
 class UserInDB(UserBase):
     id: int
     is_active: bool
+
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
