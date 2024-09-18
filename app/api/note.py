@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
+from fastapi import Query
 
 from app.db.base import AsyncSessionLocal
 from app.schemas.note import NoteCreate, NoteInDB
-from app.crud.note import create_note, get_notes, update_note, delete_note
+from app.crud.note import create_note, get_notes, update_note, delete_note, search_notes
 from app.api.deps import get_db, get_current_user
 
 router = APIRouter(
@@ -60,3 +61,16 @@ async def delete_existing_note(
         raise HTTPException(status_code=404, detail="Note not found or not authorized to delete")
 
     return note
+
+
+@router.get("/search", response_model=List[NoteInDB], status_code=status.HTTP_200_OK)
+async def search_notes_by_tags(
+        tags: List[str] = Query(None),  # Принимаем список тегов через Query-параметры
+        db: AsyncSession = Depends(get_db),
+        current_user: int = Depends(get_current_user)
+):
+    if not tags:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Tags are required for search")
+
+    return await search_notes(db=db, user_id=current_user.id, tags=tags)
