@@ -1,0 +1,17 @@
+# Dockerfile для FastAPI приложения
+FROM python:3.12-slim
+
+RUN mkdir /app
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+RUN chmod +x docker/app.sh
+
+# CMD ["gunicorn", "app.main:app", "--workers", "1", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind=0.0.0.0:8000", "--log-level=debug"]
+# CMD ["gunicorn", "app.main:app", "--workers", "1", "--bind=0.0.0.0:8000", "--log-level=debug", "--timeout", "120"]

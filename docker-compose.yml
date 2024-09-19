@@ -1,0 +1,58 @@
+services:
+  db:
+    image: postgres:16.4
+    container_name: db
+    env_file:
+      - .env-non-dev
+    ports:
+      - 5433:5432
+    environment:
+      POSTGRES_DB: notes_db
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - my-network
+
+  app:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.fastapi
+    container_name: app
+    env_file:
+      - .env-non-dev
+    command: ["./docker/app.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    networks:
+      - my-network
+
+  bot:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.telegram-bot
+    container_name: bot
+    env_file:
+      - .env-non-dev
+    environment:
+      API_URL: http://app:8000
+    depends_on:
+      - db
+      - app
+    networks:
+      - my-network
+
+
+volumes:
+  postgres_data:
+
+networks:
+  my-network:
+    driver: bridge

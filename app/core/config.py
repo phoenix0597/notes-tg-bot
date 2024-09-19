@@ -1,10 +1,15 @@
+from os import getenv
 from os.path import dirname, abspath, join
 from pydantic import ConfigDict, model_validator
 from pydantic_settings import BaseSettings
 
 
 BASE_DIR = dirname(dirname(dirname(abspath(__file__))))
-ENV_FILE = join(BASE_DIR, ".env")
+
+env_file_name = ".env"
+# if getenv("ENVIRONMENT") == "prod":
+#     env_file_name = ".env-non-dev"
+ENV_FILE = join(BASE_DIR, env_file_name)
 
 
 class Settings(BaseSettings):
@@ -21,6 +26,7 @@ class Settings(BaseSettings):
     TG_API_TOKEN: str
     BACKEND_HOST: str
     BACKEND_PORT: int
+    ENVIRONMENT: str
 
 
     @model_validator(mode="after")
@@ -35,6 +41,10 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-# print(BASE_DIR)
-# print(ENV_FILE)
-# print(settings.DATABASE_URL)
+# print(f"DB_HOST: {settings.DB_HOST}")
+# print(f"DB_PORT: {settings.DB_PORT}")
+# print(f"DB_USER: {settings.DB_USER}")
+# print(f"DB_PASS: {settings.DB_PASS}")
+# print(f"DB_NAME: {settings.DB_NAME}")
+# print(f"DATABASE_URL: {settings.DATABASE_URL}")
+
